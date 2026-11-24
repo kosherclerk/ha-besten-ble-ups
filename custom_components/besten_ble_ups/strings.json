@@ -27,8 +27,9 @@
       }
     },
     "error": {
-      "cannot_connect": "Could not connect to the device. Make sure no phone or other app is connected to the UPS (it accepts only one Bluetooth connection) and that it is in range, then try again.",
-      "not_supported": "The device answered, but not like a BestEn SC-160 UPS. Pick a different device."
+      "cannot_connect": "Home Assistant sees the UPS but the connection failed twice ({error}). Usually a previous connection is still held: restart Home Assistant (this also clears a connection left over from a removed integration), make sure no phone or other app is connected, then try again.",
+      "not_reachable": "No Bluetooth adapter or proxy that can make connections currently sees the UPS. Wait a minute for it to advertise again (it stops while something is connected to it), or move a Bluetooth proxy closer.",
+      "not_supported": "The device answered, but not like a BestEn SC-160 UPS ({error}). Pick a different device."
     },
     "abort": {
       "already_configured": "This UPS is already configured.",

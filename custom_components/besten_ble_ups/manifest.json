@@ -20,5 +20,5 @@
   "issue_tracker": "https://github.com/kosherclerk/ha-besten-ble-ups/issues",
   "loggers": ["custom_components.besten_ble_ups"],
   "requirements": [],
-  "version": "0.3.0"
+  "version": "0.3.1"
 }

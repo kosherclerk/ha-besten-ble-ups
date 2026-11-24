@@ -1,6 +1,7 @@
 """Config flow: Bluetooth discovery, manual pick, and options."""
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -92,6 +93,7 @@ class BestenUpsConfigFlow(ConfigFlow, domain=DOMAIN):
         self._discovered: dict[str, BluetoothServiceInfoBleak] = {}
         self._address: str | None = None
         self._name: str | None = None
+        self._error_detail = ""
 
     async def async_step_battery_setup(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Ask about the battery right away, so the runtime estimate works without visiting Configure."""
@@ -109,25 +111,36 @@ class BestenUpsConfigFlow(ConfigFlow, domain=DOMAIN):
     async def _async_validate(self, address: str) -> str | None:
         """Connect and read the status block, so we only add a real UPS (FFE0 is a common UUID).
 
-        Returns an error key, or None if the device answered like the UPS."""
-        ble_device = async_ble_device_from_address(self.hass, address, connectable=True)
-        if ble_device is None:
-            return "cannot_connect"
-        device = UpsDevice(ble_device)
-        try:
-            await device.read_status()
-        except ProtocolError as err:
-            _LOGGER.debug("%s answered but not like the UPS: %s", address, err)
-            return "not_supported"
-        except (BleakError, TimeoutError, OSError) as err:
-            _LOGGER.debug("%s: connection failed: %s", address, err)
-            return "cannot_connect"
-        except Exception:  # noqa: BLE001 - e.g. no FFE1 characteristic on a different FFE0 device
-            _LOGGER.debug("%s: unexpected error during validation", address, exc_info=True)
-            return "not_supported"
-        finally:
-            await device.disconnect()
-        return None
+        Returns an error key (details in self._error_detail), or None if the device answered like the UPS.
+        BLE connections often fail on the first try, so a failed connection is retried once."""
+        self._error_detail = ""
+        for attempt in (1, 2):
+            ble_device = async_ble_device_from_address(self.hass, address, connectable=True)
+            if ble_device is None:
+                self._error_detail = "no connectable Bluetooth adapter or proxy currently sees the device"
+                _LOGGER.warning("Setup test for %s: %s", address, self._error_detail)
+                return "not_reachable"
+            device = UpsDevice(ble_device)
+            try:
+                await device.read_status()
+                return None
+            except ProtocolError as err:
+                self._error_detail = str(err)
+                _LOGGER.warning("Setup test for %s: device answered but not like the UPS: %s", address, err)
+                return "not_supported"
+            except (BleakError, TimeoutError, OSError) as err:
+                self._error_detail = f"{type(err).__name__}: {err}" if str(err) else type(err).__name__
+                _LOGGER.warning("Setup test for %s, attempt %d/2: connection failed: %s",
+                                address, attempt, self._error_detail)
+            except Exception as err:  # noqa: BLE001 - e.g. no FFE1 characteristic on a different FFE0 device
+                self._error_detail = f"{type(err).__name__}: {err}"
+                _LOGGER.warning("Setup test for %s: unexpected error", address, exc_info=True)
+                return "not_supported"
+            finally:
+                await device.disconnect()
+            if attempt == 1:
+                await asyncio.sleep(3)
+        return "cannot_connect"
 
     async def async_step_bluetooth(self, discovery_info: BluetoothServiceInfoBleak) -> ConfigFlowResult:
         if not _is_candidate(discovery_info):
@@ -150,7 +163,9 @@ class BestenUpsConfigFlow(ConfigFlow, domain=DOMAIN):
             errors["base"] = error
         self._set_confirm_only()
         return self.async_show_form(
-            step_id="bluetooth_confirm", description_placeholders={"name": name}, errors=errors
+            step_id="bluetooth_confirm",
+            description_placeholders={"name": name, "error": self._error_detail or "-"},
+            errors=errors,
         )
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
@@ -179,6 +194,7 @@ class BestenUpsConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema({vol.Required(CONF_ADDRESS): vol.In(choices)}),
+            description_placeholders={"error": self._error_detail or "-"},
             errors=errors,
         )
 
