@@ -63,6 +63,17 @@ Copy `custom_components/besten_ble_ups` to `<config>/custom_components/` and res
 
 **How the runtime estimate works:** while on battery it shows the **time left**: (usable energy − energy used in this outage) ÷ live load. On mains it shows how long a full battery would last at the load measured in the last outage of at least one minute. Unplug the UPS from mains for a couple of minutes once to measure your load.
 
+## Troubleshooting
+
+**"No BestEn SC-160 UPS seen over Bluetooth"**
+1. **Disconnect everything else.** While a phone, a PC tool or another Home Assistant is connected, the UPS **stops advertising** and can't be found. Disconnect it and wait about a minute.
+2. **Check that Home Assistant hears it:** Settings → Bluetooth → *Advertisement monitor*. Look for a device advertising service `0000ffe0-…`.
+   - Its name `SC-160A-C-BLE-R01` only appears with **active** scanning (it's in the scan response).
+   - Passive scanners (ESPHome proxies in passive mode, Shelly proxies) show it **without a name**. Since v0.2.1 such devices are still found, through the FFE0 service, and listed as "Unnamed FFE0 device … possibly the UPS".
+3. **Range:** BLE through a metal rack is short. An ESPHome Bluetooth proxy (`bluetooth_proxy: active: true`) near the UPS helps a lot. Active connections must be enabled on the proxy.
+
+Before a device is added, the integration does a real Modbus read. A different FFE0 gadget is rejected with "not supported".
+
 ## Example automation
 
 ```yaml

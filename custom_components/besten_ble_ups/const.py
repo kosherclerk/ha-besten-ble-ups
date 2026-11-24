@@ -3,6 +3,9 @@ from __future__ import annotations
 
 DOMAIN = "besten_ble_ups"
 NAME_PREFIX = "SC-160"
+# The name is only in the scan response (needs active scanning); the main advertisement carries
+# just this service UUID, so passive scanners (ESPHome/Shelly proxies) only see the UUID.
+SERVICE_UUID = "0000ffe0-0000-1000-8000-00805f9b34fb"
 MANUFACTURER = "BestEn"
 MODEL = "SC-160A-C (BLE config)"
 

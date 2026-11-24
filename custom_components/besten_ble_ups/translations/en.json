@@ -11,9 +11,14 @@
         "description": "Set up {name}? Home Assistant will keep the UPS's only Bluetooth connection while the integration is running."
       }
     },
+    "error": {
+      "cannot_connect": "Could not connect to the device. Make sure no phone or other app is connected to the UPS (it accepts only one Bluetooth connection) and that it is in range, then try again.",
+      "not_supported": "The device answered, but not like a BestEn SC-160 UPS. Pick a different device."
+    },
     "abort": {
       "already_configured": "This UPS is already configured.",
-      "no_devices_found": "No BestEn SC-160 UPS found over Bluetooth. Make sure it is powered, in range, and that no phone is connected to it."
+      "not_supported": "This Bluetooth device is not a supported UPS.",
+      "no_devices_found": "No BestEn SC-160 UPS seen over Bluetooth. A UPS stops advertising while a phone, PC app or other tool is connected to it: disconnect it, wait about a minute, and try again. Also check that a Bluetooth adapter or proxy is in range (Settings → Bluetooth → Advertisement monitor: look for a device with service FFE0)."
     }
   },
   "options": {
