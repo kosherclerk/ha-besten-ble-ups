@@ -48,10 +48,10 @@ Copy `custom_components/besten_ble_ups` to `<config>/custom_components/` and res
 ## Setup
 
 1. Make sure no phone or other app is connected to the UPS.
-2. The UPS is usually **discovered automatically** (Settings → Devices & services). Otherwise use **Add integration → BestEn BLE UPS** and pick it from the list.
-3. **Configure** (recommended), then describe your battery:
-   - **Step 1:** update interval (default 10 s), **battery type** (LiFePO4 / AGM / GEL / other lead-acid), **rated capacity (Ah)** from the label, whether it has a **built-in BMS**, and optionally a **typical load (W)**. The typical load lets the runtime estimate work straight away, before the first outage has measured the real load.
-   - **Step 2:** **rated voltage** and **usable share**, pre-filled for your battery type. The step shows the resulting usable energy.
+2. The UPS is usually **discovered automatically** (Settings → Devices & services → *Discovered*). Otherwise use **Add integration → BestEn BLE UPS** and pick it from the list. Both active and passive Bluetooth scanning work.
+3. The integration does a quick test read, then asks about **your battery** on the same screen sequence: **type** (LiFePO4 / AGM / GEL / other lead-acid), **rated capacity (Ah)** from the label, **built-in BMS**, and optionally your **typical load (W)**. Rated voltage and usable share are filled in from the type. That's all: the estimated runtime works right away.
+
+To change anything later, use **Configure**. It includes the update interval (default 10 s), plus a second step to fine-tune rated voltage and usable share. It shows the resulting usable energy.
 
    | Battery | Default rated voltage | Default usable share |
    |---|---|---|
@@ -67,11 +67,10 @@ Copy `custom_components/besten_ble_ups` to `<config>/custom_components/` and res
 
 **"No BestEn SC-160 UPS seen over Bluetooth"**
 1. **Disconnect everything else.** While a phone, a PC tool or another Home Assistant is connected, the UPS **stops advertising** and can't be found. Disconnect it and wait about a minute.
-2. **Switch the Bluetooth adapter to active scanning** (recommended). On some installs the default ("Auto") scans **passively**, so the UPS's name never arrives. Go to Settings → Devices & services → **Bluetooth** → your adapter → **Configure** and set the scanning mode to **Active**. For ESPHome proxies use `bluetooth_proxy: active: true`.
-3. **Check that Home Assistant hears it:** Settings → Bluetooth → *Advertisement monitor*. Look for a device advertising service `0000ffe0-…`.
-   - Its name `SC-160A-C-BLE-R01` only appears with **active** scanning (it's in the scan response).
-   - Passive scanners (ESPHome proxies in passive mode, Shelly proxies) show it **without a name**. Since v0.2.1 such devices are still found, through the FFE0 service, and listed as "Unnamed FFE0 device … possibly the UPS".
-4. **Range:** BLE through a metal rack is short. An ESPHome Bluetooth proxy (`bluetooth_proxy: active: true`) near the UPS helps a lot. Active connections must be enabled on the proxy.
+2. **Check that Home Assistant hears it:** Settings → Bluetooth → *Advertisement monitor*. Look for a device advertising service `0000ffe0-…`.
+   - With **passive** scanning (the default "Auto" on many installs, ESPHome or Shelly proxies) the UPS shows **without a name**. That's fine: it's found through its FFE0 service and added as "BestEn UPS xx:xx".
+   - With **active** scanning (optional) its name `SC-160A-C-BLE-R01` also appears. If discovery doesn't work in passive mode, try Settings → Devices & services → **Bluetooth** → your adapter → **Configure** → scanning mode **Active**.
+3. **Range:** BLE through a metal rack is short. An ESPHome Bluetooth proxy (`bluetooth_proxy: active: true`) near the UPS helps a lot. Active connections must be enabled on the proxy.
 
 Before a device is added, the integration does a real Modbus read. A different FFE0 gadget is rejected with "not supported".
 

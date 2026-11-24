@@ -26,7 +26,7 @@ from homeassistant.helpers.selector import (
     SelectSelectorMode,
 )
 
-from .battery import BATTERY_TYPES, RATED_VOLTAGE, default_usable_pct
+from .battery import BATTERY_TYPES, RATED_VOLTAGE, default_usable_pct, with_type_defaults
 from .const import (
     CONF_BATTERY_AH,
     CONF_BATTERY_BMS,
@@ -63,12 +63,48 @@ def _title(info: BluetoothServiceInfoBleak) -> str:
     return info.name if _has_name(info) else f"BestEn UPS {info.address.upper()[-5:]}"
 
 
+def _number(min_: float, max_: float, step: float, unit: str) -> NumberSelector:
+    return NumberSelector(
+        NumberSelectorConfig(min=min_, max=max_, step=step, unit_of_measurement=unit, mode=NumberSelectorMode.BOX)
+    )
+
+
+def _battery_fields(defaults: dict[str, Any]) -> dict:
+    """Battery questions shared by the setup flow and the options flow."""
+    return {
+        vol.Required(CONF_BATTERY_TYPE, default=defaults.get(CONF_BATTERY_TYPE, "lifepo4")): SelectSelector(
+            SelectSelectorConfig(options=list(BATTERY_TYPES), translation_key="battery_type",
+                                 mode=SelectSelectorMode.DROPDOWN)
+        ),
+        vol.Required(CONF_BATTERY_AH, default=defaults.get(CONF_BATTERY_AH, 0)): _number(0, 5000, 1, "Ah"),
+        vol.Required(CONF_BATTERY_BMS, default=defaults.get(CONF_BATTERY_BMS, True)): BooleanSelector(),
+        vol.Required(CONF_TYPICAL_LOAD, default=defaults.get(CONF_TYPICAL_LOAD, 0)): _number(0, 2000, 0.1, "W"),
+    }
+
+
 class BestenUpsConfigFlow(ConfigFlow, domain=DOMAIN):
+    """Discovery or manual pick → test read → battery questions → entry (battery stored as options)."""
+
     VERSION = 1
 
     def __init__(self) -> None:
         self._discovery: BluetoothServiceInfoBleak | None = None
         self._discovered: dict[str, BluetoothServiceInfoBleak] = {}
+        self._address: str | None = None
+        self._name: str | None = None
+
+    async def async_step_battery_setup(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Ask about the battery right away, so the runtime estimate works without visiting Configure."""
+        assert self._address is not None and self._name is not None
+        if user_input is not None:
+            return self.async_create_entry(
+                title=self._name, data={CONF_ADDRESS: self._address}, options=with_type_defaults(user_input)
+            )
+        return self.async_show_form(
+            step_id="battery_setup",
+            data_schema=vol.Schema(_battery_fields({})),
+            description_placeholders={"name": self._name},
+        )
 
     async def _async_validate(self, address: str) -> str | None:
         """Connect and read the status block, so we only add a real UPS (FFE0 is a common UUID).
@@ -109,7 +145,8 @@ class BestenUpsConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             address = self._discovery.address.upper()
             if (error := await self._async_validate(address)) is None:
-                return self.async_create_entry(title=name, data={CONF_ADDRESS: address})
+                self._address, self._name = address, name
+                return await self.async_step_battery_setup()
             errors["base"] = error
         self._set_confirm_only()
         return self.async_show_form(
@@ -124,7 +161,8 @@ class BestenUpsConfigFlow(ConfigFlow, domain=DOMAIN):
             self._abort_if_unique_id_configured()
             if (error := await self._async_validate(address)) is None:
                 info = self._discovered.get(address)
-                return self.async_create_entry(title=_title(info) if info else address, data={CONF_ADDRESS: address})
+                self._address, self._name = address, (_title(info) if info else address)
+                return await self.async_step_battery_setup()
             errors["base"] = error
 
         configured = self._async_current_ids(include_ignore=False)
@@ -150,12 +188,6 @@ class BestenUpsConfigFlow(ConfigFlow, domain=DOMAIN):
         return BestenUpsOptionsFlow()
 
 
-def _number(min_: float, max_: float, step: float, unit: str) -> NumberSelector:
-    return NumberSelector(
-        NumberSelectorConfig(min=min_, max=max_, step=step, unit_of_measurement=unit, mode=NumberSelectorMode.BOX)
-    )
-
-
 class BestenUpsOptionsFlow(OptionsFlow):
     """Step 1: update interval + battery type, capacity, BMS. Step 2: rated voltage + usable %."""
 
@@ -175,13 +207,7 @@ class BestenUpsOptionsFlow(OptionsFlow):
                 {
                     vol.Required(CONF_SCAN_INTERVAL, default=opts.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)):
                         _number(MIN_SCAN_INTERVAL, MAX_SCAN_INTERVAL, 1, "s"),
-                    vol.Required(CONF_BATTERY_TYPE, default=opts.get(CONF_BATTERY_TYPE, "lifepo4")): SelectSelector(
-                        SelectSelectorConfig(options=list(BATTERY_TYPES), translation_key="battery_type",
-                                             mode=SelectSelectorMode.DROPDOWN)
-                    ),
-                    vol.Required(CONF_BATTERY_AH, default=opts.get(CONF_BATTERY_AH, 0)): _number(0, 5000, 1, "Ah"),
-                    vol.Required(CONF_BATTERY_BMS, default=opts.get(CONF_BATTERY_BMS, True)): BooleanSelector(),
-                    vol.Required(CONF_TYPICAL_LOAD, default=opts.get(CONF_TYPICAL_LOAD, 0)): _number(0, 2000, 0.1, "W"),
+                    **_battery_fields(opts),
                 }
             ),
         )

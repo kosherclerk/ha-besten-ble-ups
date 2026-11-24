@@ -40,6 +40,17 @@ class BatteryProfile:
         return self.rated_wh * self.usable_pct / 100
 
 
+def with_type_defaults(options: dict) -> dict:
+    """Fill rated voltage and usable % from the battery type when a capacity is set
+    (used by the setup flow, which only asks type / Ah / BMS / typical load)."""
+    opts = dict(options)
+    if float(opts.get("battery_capacity_ah") or 0) > 0:
+        btype = opts.get("battery_type", "lifepo4")
+        opts.setdefault("battery_voltage", RATED_VOLTAGE.get(btype, 12.0))
+        opts.setdefault("battery_usable_pct", default_usable_pct(btype, bool(opts.get("battery_bms", True))))
+    return opts
+
+
 def select_load(live: float | None, measured: float | None, configured: float | None) -> tuple[float | None, str]:
     """Pick the load used for the runtime estimate: live (on battery) > measured (last outage) > configured.
 

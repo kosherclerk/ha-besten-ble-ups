@@ -56,6 +56,17 @@ def test_runtime_hours():
     assert b.runtime_hours(10, 7.3, used_wh=50) == 0.0
 
 
+def test_setup_flow_fills_type_defaults():
+    opts = b.with_type_defaults({"battery_type": "lifepo4", "battery_capacity_ah": 30, "battery_bms": True,
+                                 "typical_load_w": 7.3})
+    assert opts["battery_voltage"] == 12.8 and opts["battery_usable_pct"] == 90 and opts["typical_load_w"] == 7.3
+    assert b.profile_from_options(opts).usable_wh == pytest.approx(345.6)
+    agm = b.with_type_defaults({"battery_type": "agm", "battery_capacity_ah": 40, "battery_bms": False})
+    assert (agm["battery_voltage"], agm["battery_usable_pct"]) == (12.0, 70)
+    skipped = b.with_type_defaults({"battery_type": "lifepo4", "battery_capacity_ah": 0})
+    assert "battery_voltage" not in skipped and b.profile_from_options(skipped) is None
+
+
 def test_new_options_win_over_legacy():
     p = b.profile_from_options({"battery_usable_wh": 999, "battery_type": "agm", "battery_capacity_ah": 10})
     assert p.usable_wh == pytest.approx(84)

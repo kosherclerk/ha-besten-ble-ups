@@ -9,6 +9,21 @@
       },
       "bluetooth_confirm": {
         "description": "Set up {name}? Home Assistant will keep the UPS's only Bluetooth connection while the integration is running."
+      },
+      "battery_setup": {
+        "title": "Your battery",
+        "description": "{name} answered. Tell us about the battery connected to it so Home Assistant can show the estimated runtime. You can change this later under Configure.",
+        "data": {
+          "battery_type": "Battery type",
+          "battery_capacity_ah": "Rated capacity",
+          "battery_bms": "Battery has a built-in BMS",
+          "typical_load_w": "Typical load (optional)"
+        },
+        "data_description": {
+          "battery_capacity_ah": "From the battery label, e.g. 30 Ah. Leave 0 to skip the runtime estimate.",
+          "battery_bms": "Only matters for LiFePO4.",
+          "typical_load_w": "Power drawn by your devices, if you know it. Used until the UPS measures the real load during the next power outage. 0 = wait for an outage."
+        }
       }
     },
     "error": {
