@@ -50,7 +50,6 @@ from .scanning import (
     async_active_sweep,
     async_set_adapters_active,
     non_active_local_adapters,
-    scanning_mode,
 )
 
 
@@ -227,20 +226,16 @@ class BestenUpsConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_enable_active(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Offer to switch local Bluetooth adapters to active scanning (only with explicit consent)."""
         adapters = non_active_local_adapters(self.hass)
-        if user_input is not None:
-            if not user_input.get("switch_to_active") or not adapters:
+        if user_input is not None:  # the confirm button was pressed (closing the dialog cancels)
+            if not adapters:
                 return self.async_abort(reason="no_devices_found")
             await async_set_adapters_active(self.hass, adapters)
             await self._async_wait_for_candidates(20)
             if not self._discovered:
                 return self.async_abort(reason="no_devices_found_active")
             return await self.async_step_user()
-        names = ", ".join(f"{e.title} ({scanning_mode(dict(e.options))})" for e in adapters)
-        return self.async_show_form(
-            step_id="enable_active",
-            data_schema=vol.Schema({vol.Required("switch_to_active", default=True): BooleanSelector()}),
-            description_placeholders={"adapters": names},
-        )
+        names = ", ".join(e.title for e in adapters)
+        return self.async_show_form(step_id="enable_active", description_placeholders={"adapters": names})
 
     @staticmethod
     @callback

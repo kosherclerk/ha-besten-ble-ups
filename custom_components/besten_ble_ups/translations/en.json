@@ -11,11 +11,9 @@
         "description": "Set up {name}? Home Assistant will keep the UPS's only Bluetooth connection while the integration is running."
       },
       "enable_active": {
-        "title": "Turn on active Bluetooth scanning?",
-        "description": "The UPS was not found, even after an on-demand active scan. Your Bluetooth adapter is not in active scanning mode: {adapters}. In passive mode many adapters hear no advertisements at all, so the UPS stays invisible.\n\nThe integration can switch these local adapters to **Active** (the same as Settings → Connectivity → Bluetooth → adapter → ⚙ → Active) and search again. ESPHome or other remote proxies are not changed. Active scanning makes BLE devices nearby answer scan requests; for most homes the effect is negligible.",
-        "data": {
-          "switch_to_active": "Switch to active scanning and search again"
-        }
+        "title": "Bluetooth needs active scanning",
+        "description": "The UPS wasn't found. Your Bluetooth adapter **{adapters}** listens passively, and in that mode it can't see the UPS.\n\nSwitch it to **active** scanning? This is the same as Settings → Connectivity → Bluetooth → adapter → ⚙ → *Active*. You can change it back there any time. Bluetooth proxies (ESPHome etc.) are not changed.\n\nTo cancel, close this dialog.",
+        "submit": "Switch to active and search again"
       },
       "battery_setup": {
         "title": "Your battery",
