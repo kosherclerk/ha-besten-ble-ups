@@ -45,6 +45,13 @@ from .const import (
 )
 from .device import UpsDevice
 from .protocol import ProtocolError
+from .scanning import (
+    ACTIVE_SWEEP_SECONDS,
+    async_active_sweep,
+    async_set_adapters_active,
+    non_active_local_adapters,
+    scanning_mode,
+)
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -94,6 +101,7 @@ class BestenUpsConfigFlow(ConfigFlow, domain=DOMAIN):
         self._address: str | None = None
         self._name: str | None = None
         self._error_detail = ""
+        self._swept = False
 
     async def async_step_battery_setup(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Ask about the battery right away, so the runtime estimate works without visiting Configure."""
@@ -180,12 +188,16 @@ class BestenUpsConfigFlow(ConfigFlow, domain=DOMAIN):
                 return await self.async_step_battery_setup()
             errors["base"] = error
 
-        configured = self._async_current_ids(include_ignore=False)
-        for info in async_discovered_service_info(self.hass, connectable=True):
-            address = info.address.upper()
-            if address not in configured and _is_candidate(info):
-                self._discovered[address] = info
+        self._collect_candidates()
+        if not self._discovered and not self._swept:
+            # Nothing seen yet: on AUTO adapters HA scans passively, which may hear nothing at all.
+            # Ask HA for an on-demand active sweep and wait for the UPS to show up.
+            self._swept = True
+            if await async_active_sweep(self.hass):
+                await self._async_wait_for_candidates(ACTIVE_SWEEP_SECONDS + 2)
         if not self._discovered:
+            if non_active_local_adapters(self.hass):
+                return await self.async_step_enable_active()
             return self.async_abort(reason="no_devices_found")
         choices = {
             a: f"{i.name} ({a})" if _has_name(i) else f"Unnamed FFE0 device ({a}), possibly the UPS"
@@ -196,6 +208,38 @@ class BestenUpsConfigFlow(ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema({vol.Required(CONF_ADDRESS): vol.In(choices)}),
             description_placeholders={"error": self._error_detail or "-"},
             errors=errors,
+        )
+
+    def _collect_candidates(self) -> None:
+        configured = self._async_current_ids(include_ignore=False)
+        for info in async_discovered_service_info(self.hass, connectable=True):
+            address = info.address.upper()
+            if address not in configured and _is_candidate(info):
+                self._discovered[address] = info
+
+    async def _async_wait_for_candidates(self, timeout: float) -> None:
+        for _ in range(int(timeout)):
+            self._collect_candidates()
+            if self._discovered:
+                return
+            await asyncio.sleep(1)
+
+    async def async_step_enable_active(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Offer to switch local Bluetooth adapters to active scanning (only with explicit consent)."""
+        adapters = non_active_local_adapters(self.hass)
+        if user_input is not None:
+            if not user_input.get("switch_to_active") or not adapters:
+                return self.async_abort(reason="no_devices_found")
+            await async_set_adapters_active(self.hass, adapters)
+            await self._async_wait_for_candidates(20)
+            if not self._discovered:
+                return self.async_abort(reason="no_devices_found_active")
+            return await self.async_step_user()
+        names = ", ".join(f"{e.title} ({scanning_mode(dict(e.options))})" for e in adapters)
+        return self.async_show_form(
+            step_id="enable_active",
+            data_schema=vol.Schema({vol.Required("switch_to_active", default=True): BooleanSelector()}),
+            description_placeholders={"adapters": names},
         )
 
     @staticmethod

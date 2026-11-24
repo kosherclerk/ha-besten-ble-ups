@@ -1,6 +1,8 @@
 """BestEn BLE UPS integration (read-only monitoring over Bluetooth LE)."""
 from __future__ import annotations
 
+import asyncio
+
 from homeassistant.components import bluetooth
 from homeassistant.const import CONF_ADDRESS, Platform
 from homeassistant.core import HomeAssistant, callback
@@ -8,17 +10,24 @@ from homeassistant.exceptions import ConfigEntryNotReady
 
 from .coordinator import BestenUpsConfigEntry, BestenUpsCoordinator
 from .device import UpsDevice
+from .scanning import ACTIVE_SWEEP_SECONDS, async_active_sweep
 
 PLATFORMS = [Platform.BINARY_SENSOR, Platform.SENSOR]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: BestenUpsConfigEntry) -> bool:
-    address: str = entry.data[CONF_ADDRESS]
-    ble_device = bluetooth.async_ble_device_from_address(hass, address.upper(), connectable=True)
+    address: str = entry.data[CONF_ADDRESS].upper()
+    ble_device = bluetooth.async_ble_device_from_address(hass, address, connectable=True)
+    if ble_device is None and await async_active_sweep(hass):
+        # AUTO adapters scan passively and may not have heard the UPS yet: wait for an active sweep.
+        for _ in range(ACTIVE_SWEEP_SECONDS + 2):
+            await asyncio.sleep(1)
+            if ble_device := bluetooth.async_ble_device_from_address(hass, address, connectable=True):
+                break
     if ble_device is None:
         raise ConfigEntryNotReady(
-            f"UPS {address} not found. Check that it is in range of a Bluetooth adapter or proxy "
-            "and that no phone or other device is connected to it"
+            f"UPS {address} not found. Check that it is in range of a Bluetooth adapter or proxy, "
+            "that no phone or other device is connected to it, and that the adapter can scan actively"
         )
 
     device = UpsDevice(ble_device)

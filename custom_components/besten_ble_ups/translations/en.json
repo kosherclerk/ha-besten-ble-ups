@@ -10,6 +10,13 @@
       "bluetooth_confirm": {
         "description": "Set up {name}? Home Assistant will keep the UPS's only Bluetooth connection while the integration is running."
       },
+      "enable_active": {
+        "title": "Turn on active Bluetooth scanning?",
+        "description": "The UPS was not found, even after an on-demand active scan. Your Bluetooth adapter is not in active scanning mode: {adapters}. In passive mode many adapters hear no advertisements at all, so the UPS stays invisible.\n\nThe integration can switch these local adapters to **Active** (the same as Settings → Connectivity → Bluetooth → adapter → ⚙ → Active) and search again. ESPHome or other remote proxies are not changed. Active scanning makes BLE devices nearby answer scan requests; for most homes the effect is negligible.",
+        "data": {
+          "switch_to_active": "Switch to active scanning and search again"
+        }
+      },
       "battery_setup": {
         "title": "Your battery",
         "description": "{name} answered. Tell us about the battery connected to it so Home Assistant can show the estimated runtime. You can change this later under Configure.",
@@ -34,6 +41,7 @@
     "abort": {
       "already_configured": "This UPS is already configured.",
       "not_supported": "This Bluetooth device is not a supported UPS.",
+      "no_devices_found_active": "Bluetooth is now in active scanning mode, but the UPS still was not seen. Disconnect any phone or app from it, check it is within range of the adapter (metal racks block Bluetooth), and try again in a minute.",
       "no_devices_found": "No BestEn SC-160 UPS seen over Bluetooth. A UPS stops advertising while a phone, PC app or other tool is connected to it: disconnect it, wait about a minute, and try again. Also check that a Bluetooth adapter or proxy is in range (Settings → Bluetooth → Advertisement monitor: look for a device with service FFE0)."
     }
   },
