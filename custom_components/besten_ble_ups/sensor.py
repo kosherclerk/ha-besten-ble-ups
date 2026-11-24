@@ -91,6 +91,18 @@ SENSORS: tuple[UpsSensorDescription, ...] = (
             "basis": "time left in this outage (assumes full battery at start)" if d.status.on_battery
             else "full battery at the last measured load",
             "outage_energy_wh": d.outage_energy_wh if d.status.on_battery else None,
+            "load_w": d.load_w,
+            **(
+                {
+                    "battery_type": d.battery.battery_type,
+                    "battery_rated_wh": round(d.battery.rated_wh),
+                    "battery_usable_wh": round(d.battery.usable_wh),
+                    "battery_usable_pct": d.battery.usable_pct,
+                    "battery_bms": d.battery.has_bms,
+                }
+                if d.battery
+                else {"battery": "not configured (Configure → battery capacity)"}
+            ),
         },
     ),
     UpsSensorDescription(

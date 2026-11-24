@@ -18,7 +18,7 @@ Works with the host's Bluetooth adapter or with **ESPHome Bluetooth proxies** (a
 | Battery current | sensor (A) | Negative = discharging. **Charging values are uncalibrated** (see below) |
 | Battery power | sensor (W) | Battery voltage × current |
 | Load power | sensor (W) | Live while on battery; on mains, the average from the last outage (kept across restarts) |
-| Estimated runtime | sensor (h) | Needs your battery's usable energy (Options) |
+| Estimated runtime | sensor (h) | **Time left** while on battery; full-battery runtime on mains. Needs the battery described in Options |
 | Temperature | diagnostic (°C) | Reported by the UPS; not verified against a thermometer |
 | Charge stage setpoint | diagnostic (A) | Equals the charge-current setting during bulk charging, about 6 % of it at float |
 | Charge current setting | diagnostic (A) | The UPS's configured charge current (factory 6.00 A) |
@@ -49,11 +49,19 @@ Copy `custom_components/besten_ble_ups` to `<config>/custom_components/` and res
 
 1. Make sure no phone or other app is connected to the UPS.
 2. The UPS is usually **discovered automatically** (Settings → Devices & services). Otherwise use **Add integration → BestEn BLE UPS** and pick it from the list.
-3. Optional (**Configure**):
-   - **Update interval**: default 10 s.
-   - **Usable battery energy (Wh)** for the runtime estimate. Example: 12.8 V × 30 Ah × 90 % ≈ 346 Wh.
+3. **Configure** (recommended), then describe your battery:
+   - **Step 1:** update interval (default 10 s), **battery type** (LiFePO4 / AGM / GEL / other lead-acid), **rated capacity (Ah)** from the label, and whether it has a **built-in BMS**.
+   - **Step 2:** **rated voltage** and **usable share**, pre-filled for your battery type. The step shows the resulting usable energy.
 
-The load and runtime values appear after the first power outage of at least one minute. You can unplug the UPS from mains for a couple of minutes to measure the load.
+   | Battery | Default rated voltage | Default usable share |
+   |---|---|---|
+   | LiFePO4 with BMS | 12.8 V | 90 % |
+   | LiFePO4 without BMS | 12.8 V | 80 % |
+   | AGM / GEL / other lead-acid | 12.0 V | 70 % |
+
+   Example: LiFePO4 30 Ah with BMS → 12.8 V × 30 Ah × 90 % ≈ **346 Wh** usable.
+
+**How the runtime estimate works:** while on battery it shows the **time left**: (usable energy − energy used in this outage) ÷ live load. On mains it shows how long a full battery would last at the load measured in the last outage of at least one minute. Unplug the UPS from mains for a couple of minutes once to measure your load.
 
 ## Example automation
 

@@ -20,13 +20,39 @@
     "step": {
       "init": {
         "title": "Options",
+        "description": "Describe the battery connected to the UPS so the integration can estimate the runtime.",
         "data": {
-          "scan_interval": "Update interval (seconds)",
-          "battery_usable_wh": "Usable battery energy (Wh, 0 = no runtime estimate)"
+          "scan_interval": "Update interval",
+          "battery_type": "Battery type",
+          "battery_capacity_ah": "Rated capacity",
+          "battery_bms": "Battery has a built-in BMS"
         },
         "data_description": {
-          "battery_usable_wh": "Example: 12.8 V × 30 Ah × 90 % ≈ 346 Wh. Used for the estimated runtime."
+          "battery_capacity_ah": "From the battery label, e.g. 30 Ah. Set 0 to turn off the runtime estimate.",
+          "battery_bms": "Only matters for LiFePO4. Without a BMS the estimate is more conservative."
         }
+      },
+      "battery": {
+        "title": "Battery details",
+        "description": "Rated energy: {rated_wh} Wh. With the suggested values about {usable_wh} Wh is usable before the UPS cuts off (suggested usable share for this battery: {default_pct} %).",
+        "data": {
+          "battery_voltage": "Rated voltage",
+          "battery_usable_pct": "Usable share of capacity"
+        },
+        "data_description": {
+          "battery_voltage": "12.8 V for a 4-cell LiFePO4, 12 V for lead-acid (AGM/GEL).",
+          "battery_usable_pct": "Lower it for an old battery or a cold location."
+        }
+      }
+    }
+  },
+  "selector": {
+    "battery_type": {
+      "options": {
+        "lifepo4": "LiFePO4 (lithium iron phosphate)",
+        "agm": "AGM",
+        "gel": "GEL",
+        "lead_acid": "Other lead-acid"
       }
     }
   },

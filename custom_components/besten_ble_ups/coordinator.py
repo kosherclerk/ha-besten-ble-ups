@@ -14,8 +14,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
+from .battery import BatteryProfile, profile_from_options
 from .const import (
-    CONF_BATTERY_WH,
     CONF_SCAN_INTERVAL,
     CONFIG_REFRESH,
     DEFAULT_SCAN_INTERVAL,
@@ -39,6 +39,7 @@ class UpsData:
     outage_start: datetime | None
     outage_energy_wh: float
     runtime_h: float | None
+    battery: BatteryProfile | None
 
 
 class BestenUpsCoordinator(DataUpdateCoordinator[UpsData]):
@@ -57,8 +58,9 @@ class BestenUpsCoordinator(DataUpdateCoordinator[UpsData]):
             _LOGGER,
             config_entry=entry,
             name=f"{DOMAIN} {device.address}",
-            update_interval=timedelta(seconds=entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)),
+            update_interval=timedelta(seconds=float(entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL))),
         )
+        self.battery = profile_from_options(dict(entry.options))
         self.device = device
         self.ups_config: UpsConfig | None = None
         self._config_read_at = 0.0
@@ -83,7 +85,7 @@ class BestenUpsCoordinator(DataUpdateCoordinator[UpsData]):
         load_live = status.on_battery and bool(self._recent_load)
         load = sum(self._recent_load) / len(self._recent_load) if load_live else self.load_estimate
 
-        usable_wh = float(self.config_entry.options.get(CONF_BATTERY_WH, 0) or 0)
+        usable_wh = self.battery.usable_wh if self.battery else 0.0
         runtime = None
         if usable_wh > 0 and load and load > 0.5:
             remaining = usable_wh - (self._outage_wh if status.on_battery else 0.0)
@@ -97,6 +99,7 @@ class BestenUpsCoordinator(DataUpdateCoordinator[UpsData]):
             outage_start=self._outage_start,
             outage_energy_wh=round(self._outage_wh, 3),
             runtime_h=round(runtime, 2) if runtime is not None else None,
+            battery=self.battery,
         )
 
     def _track_outage(self, status: UpsStatus, now: datetime) -> None:
