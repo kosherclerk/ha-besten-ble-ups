@@ -1,0 +1,53 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "Оберіть ДБЖ",
+        "data": { "address": "Пристрій" },
+        "description": "Показано лише ДБЖ, які бачить Bluetooth-адаптер або проксі. Спершу від'єднайте телефон від ДБЖ: він приймає лише одне Bluetooth-з'єднання."
+      },
+      "bluetooth_confirm": {
+        "description": "Налаштувати {name}? Поки інтеграція працює, Home Assistant утримуватиме єдине Bluetooth-з'єднання з ДБЖ."
+      }
+    },
+    "abort": {
+      "already_configured": "Цей ДБЖ уже налаштовано.",
+      "no_devices_found": "ДБЖ BestEn SC-160 не знайдено через Bluetooth. Перевірте живлення, відстань і що телефон не під'єднаний до нього."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Параметри",
+        "data": {
+          "scan_interval": "Інтервал оновлення (секунди)",
+          "battery_usable_wh": "Корисна енергія АКБ (Вт·год, 0 = без оцінки часу роботи)"
+        },
+        "data_description": {
+          "battery_usable_wh": "Приклад: 12,8 В × 30 А·год × 90 % ≈ 346 Вт·год. Використовується для оцінки часу роботи."
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "ac_power": { "name": "Мережа 220 В" },
+      "charging": { "name": "Заряджання" }
+    },
+    "sensor": {
+      "power_source": { "name": "Джерело живлення", "state": { "mains": "Мережа", "battery": "Акумулятор" } },
+      "battery_voltage": { "name": "Напруга АКБ" },
+      "output_voltage": { "name": "Вихідна напруга" },
+      "battery_current": { "name": "Струм АКБ" },
+      "battery_power": { "name": "Потужність АКБ" },
+      "load_power": { "name": "Потужність навантаження" },
+      "runtime": { "name": "Орієнтовний час роботи" },
+      "temperature": { "name": "Температура" },
+      "charge_stage": { "name": "Уставка етапу заряду" },
+      "charge_current_setting": { "name": "Налаштування струму заряду" },
+      "charge_voltage_setting": { "name": "Налаштування напруги заряду" },
+      "last_restart": { "name": "Останній перезапуск" }
+    }
+  }
+}

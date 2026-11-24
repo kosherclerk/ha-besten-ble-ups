@@ -1,0 +1,53 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "Choose your UPS",
+        "data": { "address": "Device" },
+        "description": "Only UPS units seen by a Bluetooth adapter or proxy are listed. Disconnect any phone from the UPS first: it accepts only one Bluetooth connection at a time."
+      },
+      "bluetooth_confirm": {
+        "description": "Set up {name}? Home Assistant will keep the UPS's only Bluetooth connection while the integration is running."
+      }
+    },
+    "abort": {
+      "already_configured": "This UPS is already configured.",
+      "no_devices_found": "No BestEn SC-160 UPS found over Bluetooth. Make sure it is powered, in range, and that no phone is connected to it."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options",
+        "data": {
+          "scan_interval": "Update interval (seconds)",
+          "battery_usable_wh": "Usable battery energy (Wh, 0 = no runtime estimate)"
+        },
+        "data_description": {
+          "battery_usable_wh": "Example: 12.8 V × 30 Ah × 90 % ≈ 346 Wh. Used for the estimated runtime."
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "ac_power": { "name": "AC power" },
+      "charging": { "name": "Charging" }
+    },
+    "sensor": {
+      "power_source": { "name": "Power source", "state": { "mains": "Mains", "battery": "Battery" } },
+      "battery_voltage": { "name": "Battery voltage" },
+      "output_voltage": { "name": "Output voltage" },
+      "battery_current": { "name": "Battery current" },
+      "battery_power": { "name": "Battery power" },
+      "load_power": { "name": "Load power" },
+      "runtime": { "name": "Estimated runtime" },
+      "temperature": { "name": "Temperature" },
+      "charge_stage": { "name": "Charge stage setpoint" },
+      "charge_current_setting": { "name": "Charge current setting" },
+      "charge_voltage_setting": { "name": "Charge voltage setting" },
+      "last_restart": { "name": "Last restart" }
+    }
+  }
+}
