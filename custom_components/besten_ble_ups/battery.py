@@ -40,6 +40,22 @@ class BatteryProfile:
         return self.rated_wh * self.usable_pct / 100
 
 
+def select_load(live: float | None, measured: float | None, configured: float | None) -> tuple[float | None, str]:
+    """Pick the load used for the runtime estimate: live (on battery) > measured (last outage) > configured.
+
+    Returns (watts, source) where source is "live", "measured", "configured" or "none"."""
+    for value, source in ((live, "live"), (measured, "measured"), (configured, "configured")):
+        if value is not None and value > 0.5:
+            return value, source
+    return None, "none"
+
+
+def runtime_hours(usable_wh: float, load_w: float | None, used_wh: float = 0.0) -> float | None:
+    if usable_wh <= 0 or not load_w or load_w <= 0.5:
+        return None
+    return max(usable_wh - used_wh, 0.0) / load_w
+
+
 def profile_from_options(options: dict) -> BatteryProfile | None:
     """Build the profile from config-entry options; supports the v0.1 'battery_usable_wh' option."""
     ah = float(options.get("battery_capacity_ah") or 0)

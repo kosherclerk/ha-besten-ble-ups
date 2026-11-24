@@ -30,11 +30,13 @@
           "scan_interval": "Update interval",
           "battery_type": "Battery type",
           "battery_capacity_ah": "Rated capacity",
-          "battery_bms": "Battery has a built-in BMS"
+          "battery_bms": "Battery has a built-in BMS",
+          "typical_load_w": "Typical load (optional)"
         },
         "data_description": {
           "battery_capacity_ah": "From the battery label, e.g. 30 Ah. Set 0 to turn off the runtime estimate.",
-          "battery_bms": "Only matters for LiFePO4. Without a BMS the estimate is more conservative."
+          "battery_bms": "Only matters for LiFePO4. Without a BMS the estimate is more conservative.",
+          "typical_load_w": "Power drawn by your devices, used for the runtime estimate until the UPS measures it during the next power outage (it can only measure the load on battery). 0 = wait for an outage."
         }
       },
       "battery": {

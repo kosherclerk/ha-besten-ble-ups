@@ -34,6 +34,7 @@ from .const import (
     CONF_BATTERY_USABLE_PCT,
     CONF_BATTERY_VOLTAGE,
     CONF_SCAN_INTERVAL,
+    CONF_TYPICAL_LOAD,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     MAX_SCAN_INTERVAL,
@@ -180,6 +181,7 @@ class BestenUpsOptionsFlow(OptionsFlow):
                     ),
                     vol.Required(CONF_BATTERY_AH, default=opts.get(CONF_BATTERY_AH, 0)): _number(0, 5000, 1, "Ah"),
                     vol.Required(CONF_BATTERY_BMS, default=opts.get(CONF_BATTERY_BMS, True)): BooleanSelector(),
+                    vol.Required(CONF_TYPICAL_LOAD, default=opts.get(CONF_TYPICAL_LOAD, 0)): _number(0, 2000, 0.1, "W"),
                 }
             ),
         )

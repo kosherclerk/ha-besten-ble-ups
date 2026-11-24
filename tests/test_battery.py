@@ -40,6 +40,22 @@ def test_legacy_usable_wh_option_still_works():
     assert p.usable_wh == pytest.approx(346)
 
 
+def test_load_priority_live_measured_configured():
+    assert b.select_load(7.5, 7.3, 9.0) == (7.5, "live")
+    assert b.select_load(None, 7.3, 9.0) == (7.3, "measured")
+    assert b.select_load(None, None, 9.0) == (9.0, "configured")
+    assert b.select_load(None, None, None) == (None, "none")
+    assert b.select_load(0.2, None, 0) == (None, "none")  # noise below 0.5 W is ignored
+
+
+def test_runtime_hours():
+    assert b.runtime_hours(345.6, 7.3) == pytest.approx(47.34, abs=0.01)
+    assert b.runtime_hours(345.6, 7.3, used_wh=45.6) == pytest.approx(41.1, abs=0.01)
+    assert b.runtime_hours(345.6, None) is None
+    assert b.runtime_hours(0, 7.3) is None
+    assert b.runtime_hours(10, 7.3, used_wh=50) == 0.0
+
+
 def test_new_options_win_over_legacy():
     p = b.profile_from_options({"battery_usable_wh": 999, "battery_type": "agm", "battery_capacity_ah": 10})
     assert p.usable_wh == pytest.approx(84)

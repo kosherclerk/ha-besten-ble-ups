@@ -14,9 +14,10 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
-from .battery import BatteryProfile, profile_from_options
+from .battery import BatteryProfile, profile_from_options, runtime_hours, select_load
 from .const import (
     CONF_SCAN_INTERVAL,
+    CONF_TYPICAL_LOAD,
     CONFIG_REFRESH,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
@@ -34,8 +35,9 @@ type BestenUpsConfigEntry = ConfigEntry["BestenUpsCoordinator"]
 class UpsData:
     status: UpsStatus
     config: UpsConfig | None
-    load_w: float | None  # live while on battery, else last measured outage average
+    load_w: float | None  # live on battery > last measured outage average > configured typical load
     load_live: bool
+    load_source: str  # "live" | "measured" | "configured" | "none"
     outage_start: datetime | None
     outage_energy_wh: float
     runtime_h: float | None
@@ -82,20 +84,19 @@ class BestenUpsCoordinator(DataUpdateCoordinator[UpsData]):
         now = dt_util.utcnow()
         self._track_outage(status, now)
 
-        load_live = status.on_battery and bool(self._recent_load)
-        load = sum(self._recent_load) / len(self._recent_load) if load_live else self.load_estimate
+        live = sum(self._recent_load) / len(self._recent_load) if status.on_battery and self._recent_load else None
+        configured = float(self.config_entry.options.get(CONF_TYPICAL_LOAD) or 0) or None
+        load, source = select_load(live, self.load_estimate, configured)
 
         usable_wh = self.battery.usable_wh if self.battery else 0.0
-        runtime = None
-        if usable_wh > 0 and load and load > 0.5:
-            remaining = usable_wh - (self._outage_wh if status.on_battery else 0.0)
-            runtime = max(remaining, 0.0) / load
+        runtime = runtime_hours(usable_wh, load, self._outage_wh if status.on_battery else 0.0)
 
         return UpsData(
             status=status,
             config=self.ups_config,
             load_w=round(load, 2) if load is not None else None,
-            load_live=load_live,
+            load_live=source == "live",
+            load_source=source,
             outage_start=self._outage_start,
             outage_energy_wh=round(self._outage_wh, 3),
             runtime_h=round(runtime, 2) if runtime is not None else None,

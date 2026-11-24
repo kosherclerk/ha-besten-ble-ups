@@ -92,6 +92,7 @@ SENSORS: tuple[UpsSensorDescription, ...] = (
             else "full battery at the last measured load",
             "outage_energy_wh": d.outage_energy_wh if d.status.on_battery else None,
             "load_w": d.load_w,
+            "load_source": d.load_source,
             **(
                 {
                     "battery_type": d.battery.battery_type,
@@ -190,11 +191,17 @@ class UpsLoadSensor(BestenUpsEntity, RestoreSensor):
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
-        if self.coordinator.load_estimate is None and (last := await self.async_get_last_sensor_data()):
-            try:
-                self.coordinator.load_estimate = float(last.native_value)
-            except (TypeError, ValueError):
-                pass
+        if self.coordinator.load_estimate is not None or not (last := await self.async_get_last_state()):
+            return
+        # Restore only a MEASURED value (never the configured typical load).
+        value = last.attributes.get("measured_w")
+        if value is None and last.attributes.get("source") == "average of the last outage":  # v0.2.1 state
+            value = last.state
+        try:
+            if value not in (None, "unknown", "unavailable") and float(value) > 0:
+                self.coordinator.load_estimate = float(value)
+        except (TypeError, ValueError):
+            pass
 
     @property
     def native_value(self) -> float | None:
@@ -202,8 +209,16 @@ class UpsLoadSensor(BestenUpsEntity, RestoreSensor):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        data = self.coordinator.data
-        return {"source": "live (on battery)" if data.load_live else "average of the last outage"}
+        source = self.coordinator.data.load_source
+        return {
+            "source": {
+                "live": "live, measured from the battery during this outage",
+                "measured": "measured: average of the last outage",
+                "configured": "configured typical load (no outage measured yet)",
+                "none": "unknown: set a typical load in Configure, or wait for an outage",
+            }[source],
+            "measured_w": round(self.coordinator.load_estimate, 2) if self.coordinator.load_estimate else None,
+        }
 
 
 class UpsLastRestartSensor(BestenUpsEntity, SensorEntity):

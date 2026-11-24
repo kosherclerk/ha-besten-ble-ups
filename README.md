@@ -50,7 +50,7 @@ Copy `custom_components/besten_ble_ups` to `<config>/custom_components/` and res
 1. Make sure no phone or other app is connected to the UPS.
 2. The UPS is usually **discovered automatically** (Settings → Devices & services). Otherwise use **Add integration → BestEn BLE UPS** and pick it from the list.
 3. **Configure** (recommended), then describe your battery:
-   - **Step 1:** update interval (default 10 s), **battery type** (LiFePO4 / AGM / GEL / other lead-acid), **rated capacity (Ah)** from the label, and whether it has a **built-in BMS**.
+   - **Step 1:** update interval (default 10 s), **battery type** (LiFePO4 / AGM / GEL / other lead-acid), **rated capacity (Ah)** from the label, whether it has a **built-in BMS**, and optionally a **typical load (W)**. The typical load lets the runtime estimate work straight away, before the first outage has measured the real load.
    - **Step 2:** **rated voltage** and **usable share**, pre-filled for your battery type. The step shows the resulting usable energy.
 
    | Battery | Default rated voltage | Default usable share |
@@ -61,7 +61,7 @@ Copy `custom_components/besten_ble_ups` to `<config>/custom_components/` and res
 
    Example: LiFePO4 30 Ah with BMS → 12.8 V × 30 Ah × 90 % ≈ **346 Wh** usable.
 
-**How the runtime estimate works:** while on battery it shows the **time left**: (usable energy − energy used in this outage) ÷ live load. On mains it shows how long a full battery would last at the load measured in the last outage of at least one minute. Unplug the UPS from mains for a couple of minutes once to measure your load.
+**How the runtime estimate works:** while on battery it shows the **time left**: (usable energy − energy used in this outage) ÷ live load. On mains it shows how long a full battery would last. It uses the load **measured** in the last outage of at least one minute, or the **typical load** from Configure if no outage has been measured yet. The `source` attribute of *Load power* says which. Unplug the UPS from mains for a couple of minutes once to measure your real load.
 
 ## Troubleshooting
 

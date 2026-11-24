@@ -16,6 +16,7 @@ CONF_BATTERY_BMS = "battery_bms"
 CONF_BATTERY_VOLTAGE = "battery_voltage"
 CONF_BATTERY_USABLE_PCT = "battery_usable_pct"
 CONF_BATTERY_WH = "battery_usable_wh"  # v0.1.x, still honoured if no capacity is set
+CONF_TYPICAL_LOAD = "typical_load_w"  # used for the runtime estimate until an outage measures the load
 
 DEFAULT_SCAN_INTERVAL = 10  # seconds
 MIN_SCAN_INTERVAL = 5
